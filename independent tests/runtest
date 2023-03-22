@@ -1,0 +1,163 @@
+#!/bin/python3
+import matplotlib.pyplot as plt
+import numpy as np
+import argparse
+import subprocess
+import os
+
+ENABLE_GRAPHS = False
+githubToken = ""
+cmdString = "docker build -f Dockerfile.teststuff --tag=test --build-arg UK_KRAFT_GITHUB_TOKEN="
+
+parser = argparse.ArgumentParser()
+subparsers = parser.add_subparsers(dest='cmd')
+parser.add_argument("-t", "--token", action="store", dest="githubToken", type=str)
+parser.add_argument("-g", "--graphs", action="store_true", dest="graph",
+        default=False)
+args = parser.parse_args()
+githubToken = args.githubToken
+ENABLE_GRAPHS = args.graph
+
+# CONFIGURE TESTS AND RUN THE COMMAND
+if(githubToken == ""):
+    print("error, invalid github access token\n")
+    exit(0)
+cmdString += githubToken + " ."
+try:
+    subprocess.run(cmdString, shell=True)
+    subprocess.run("docker run -it test:latest > tmp.txt", shell=True)
+except:
+    print("error building the docker container\n")
+    exit(0)
+
+print("Build successful\nGathering data...")
+
+# PARSE DOCKER OUTPUT
+content = ""
+p = []
+f = []
+b = []
+pp = []
+fp = []
+bp = []
+with open("./tmp.txt", "r") as file:
+    content = file.read().split("\n\n\n")
+    file.close()
+os.remove("./tmp.txt")
+
+# CREATE THE SYSTEM CALL LOG FILES
+print("Generating log files...")
+for i in range(1,len(content)):
+    if(content[i] is ""):
+        continue
+    logcont = content[i].split("\n")
+    logpath = "./logs/" + logcont[0] + ".log"
+    logcontent = ""
+    for j in range(1, len(logcont)):
+        logcontent += logcont[j] + "\n"
+    if(logcontent is ""):
+        continue
+    with open(logpath, "w") as file:
+        file.write(logcontent)
+        file.close()
+
+if(ENABLE_GRAPHS is False):
+    exit(0)
+
+print("Parsing test numbers...")
+cont = content[0].split("\n")
+# GET THE NUMBERS FROM THE DOCKERFILE OUTPUT
+line = cont[0].split(" ")
+for num in line:
+    if(num is not ""):
+        p.append(int(num))
+line = cont[1].split(" ")
+for num in line:
+    if(num is not ""):
+        f.append(int(num))
+line = cont[2].split(" ")
+for num in line:
+    if(num is not ""):
+        b.append(int(num))
+
+# CONVERT THE NUMBERS TO PERCENTAGES
+for i in range(len(p)):
+    tot = p[i] + f[i] + b[i]
+    pp.append(p[i] / tot * 100)
+    fp.append(f[i] / tot * 100)
+    bp.append(b[i] / tot * 100)
+
+pp = np.array_split(np.array(pp), 6)
+fp = np.array_split(np.array(fp), 6)
+bp = np.array_split(np.array(bp), 6)
+# USE THE GATHERED DATA FOR THE PLOT
+
+print("Generating plots...")
+syscalls = os.listdir("./syscalls")
+for i in range(len(syscalls)):
+    syscalls[i] += ": " + str(p[i]) + "/" + str(f[i]) + "/" + str(b[i])
+
+syscalls = [syscalls[i * 60:(i + 1) * 60] for i in range((len(syscalls) + 59) // 60 )]
+for i in range(len(syscalls)):
+    syscalls[i] = tuple(syscalls[i])
+data = [{
+    'passed': pp[0],
+    'failed': fp[0],
+    'broken': bp[0],
+}, {
+    'passed': pp[1],
+    'failed': fp[1],
+    'broken': bp[1],
+}, {
+    'passed': pp[2],
+    'failed': fp[2],
+    'broken': bp[2],
+}, {
+    'passed': pp[3],
+    'failed': fp[3],
+    'broken': bp[3],
+}, {
+    'passed': pp[4],
+    'failed': fp[4],
+    'broken': bp[4],
+}, {
+    'passed': pp[5],
+    'failed': fp[5],
+    'broken': bp[5],
+}]
+width = 0.6  # the width of the bars: can also be len(x) sequence
+
+bar_colors = {
+    'passed': ['tab:green'],
+    'failed': ['tab:red'],
+    'broken': ['tab:gray'],
+}
+
+fig, ax = plt.subplots(ncols=7, figsize=(20,10))
+for i in range(6):
+    left = np.zeros(60)
+    for res, res_count in data[i].items():
+        x = ax[i].barh(syscalls[i], res_count, width, label=res, color=bar_colors[res], left=left)
+        left += res_count
+
+# For the total plot
+tot = sum(p) + sum(f) + sum(b)
+total = ("Total")
+total_weight = {
+    'passed':[int(sum(p) / tot * 10000)/100],
+    'failed':[int(sum(f) / tot * 10000)/100],
+    'broken':[int(sum(b) / tot * 10000)/100],
+}
+
+width = 1
+bottom=np.zeros(1)
+for res, res_count in total_weight.items():
+    x = ax[6].bar(total, res_count, width, label=res, color=bar_colors[res], bottom=bottom)
+    bottom += res_count
+    ax[6].bar_label(x,label_type='center')
+
+# Final adjustments
+ax[3].set_title("System call test results: passed/failed/unfinished")
+fig.tight_layout()
+plt.ylim(-0.5, 100.5)
+plt.show()

@@ -1,0 +1,42 @@
+FROM ubuntu:22.04
+
+#install prerequisites
+RUN set -ex; \
+	apt-get update --fix-missing; \
+	apt-get install -y --no-install-recommends \
+		python3-pip git make ca-certificates software-properties-common curl gnupg2 git build-essential libncurses-dev wget gcc python3 gawk sed less flex bison zip unzip nano tree socat uuid-runtime\
+	; \
+	rm -rf /var/lib/apt/lists/*
+
+RUN set -ex; \
+	pip3 install git+https://github.com/unikraft/kraft.git; \
+	pip3 cache purge
+
+RUN set -ex; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		bison \
+		flex \
+	; \
+	rm -rf /var/lib/apt/lists/*
+
+# set up the environment
+ARG UK_KRAFT_GITHUB_TOKEN
+
+RUN set -ex; \
+	kraft list update; \
+	kraft list pull unikraft; \
+    kraft list pull lwip; \
+    kraft list pull libelf
+
+# need to manually pull elfloader, since it doesn't have kraft.yaml
+RUN cd ~/.unikraft/apps && git clone https://github.com/unikraft/app-elfloader.git && mv app-elfloader ./elfloader
+WORKDIR /root
+COPY /dockerfile_data/kraft.yaml .unikraft/apps/elfloader/kraft.yaml
+RUN cd ~/.unikraft/apps/elfloader && kraft configure && kraft build && mkdir fs0 && cp /lib/x86_64-linux-gnu/libc.so.6 ./fs0/
+
+ADD syscalls /root/syscalls
+COPY /dockerfile_data/brain.py /root/brain.py
+RUN chmod +x /root/brain.py && ./brain.py
+
+CMD cat /root/out.txt

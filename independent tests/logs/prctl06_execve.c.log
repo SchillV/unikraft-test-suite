@@ -1,0 +1,4 @@
+argc is 1, expected 3
+(null) prctl(PR_GET_NO_NEW_PRIVS) expected 1 got 0
+(null) getegid() returns 0 unexpectedly, it gains root privileges
+(null) geteuid() returns 0 unexpectedly, it gains root privileges

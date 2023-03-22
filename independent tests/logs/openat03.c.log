@@ -1,0 +1,7 @@
+O_TMPFILE not supported
+openat() failed, error number 95
+[I] creating a file with O_TMPFILE flag
+openat() failed, error number 95
+[I] writing data to the file
+file size is '0'
+not expected size: '0' != '4096'

@@ -1,0 +1,2 @@
+[I] openat with a filefd instead of dirfd
+[I] openat with invalid fd
