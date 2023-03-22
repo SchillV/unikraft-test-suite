@@ -1,2 +1,0 @@
-[I] User nobody: uid = 65534, gid = 65534
-openat(-1, O_TMPFILE) failed, error number 9

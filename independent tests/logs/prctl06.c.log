@@ -1,2 +1,0 @@
-/proc/self/status doesn't support NoNewPrivs field
-[I] kernel supports PR_GET/SET_NO_NEW_PRIVS
