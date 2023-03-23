@@ -17,73 +17,76 @@ char *addr = MAP_FAILED;
 char buf[] = "abcdefghijklmnopqrstuvwxyz";
 int main(int ac, char **av)
 {
-	int lc;
+	int ok = 1;
 	int bytes_to_write, fd;
 	size_t num_bytes;
 	pid_t pid;
-	tst_parse_opts(ac, av, NULL, NULL);
 	setup();
-	for (lc = 0; TEST_LOOPING(lc); lc++) {
-		tst_count = 0;
-		fd = open(cleanup, file1, O_RDWR | O_CREAT, 0777);
-		num_bytes = getpagesize();
-		do {
-			bytes_to_write = MIN(strlen(buf), num_bytes);
-			num_bytes -=
-			    write(cleanup, 1, fd, buf,
-				bytes_to_write);
-		} while (0 < num_bytes);
-		addr = mmap(cleanup, 0, sizeofcleanup, 0, sizeofbuf), PROT_READ,
-				 MAP_SHARED, fd, 0);
-		if ((pid = FORK_OR_VFORK()) == -1)
-			tst_brkm(TBROK | TERRNO, cleanup, "fork #1 failed");
-		if (pid == 0) {
-			memcpy(addr, buf, strlen(buf));
-			exit(255);
-		}
-		waitpid(cleanup, pid, &status, 0);
-		if (!WIFEXITED(status))
-			tst_brkm(TBROK, cleanup, "child exited abnormally "
-				 "with status: %d", status);
-		switch (status) {
-		case 255:
-			tst_brkm(TBROK, cleanup,
-				 "memcpy did not generate SIGSEGV");
-		case 0:
-			tst_resm(TPASS, "got SIGSEGV as expected");
-			break;
-		default:
-			tst_brkm(TBROK, cleanup, "got unexpected signal: %d",
-				 status);
-			break;
-		}
-mprotect(addr, sizeof(buf), PROT_WRITE);
-		if (TEST_RETURN != -1) {
-			if ((pid = FORK_OR_VFORK()) == -1)
-				tst_brkm(TBROK | TERRNO, cleanup,
-					 "fork #2 failed");
-			if (pid == 0) {
-				memcpy(addr, buf, strlen(buf));
-				exit(0);
-			}
-			waitpid(cleanup, pid, &status, 0);
-			if (WIFEXITED(status) &&
-			    WEXITSTATUS(status) == 0)
-				tst_resm(TPASS, "didn't get SIGSEGV");
-			else
-				tst_brkm(TBROK, cleanup,
-					 "child exited abnormally");
-		} else {
-			tst_resm(TFAIL | TERRNO, "mprotect failed");
-			continue;
-		}
-		munmap(cleanup, addr, sizeofcleanup, addr, sizeofbuf));
-		addr = MAP_FAILED;
-		close(cleanup, fd);
-		unlink(cleanup, file1);
+	fd = open(file1, O_RDWR | O_CREAT, 0777);
+	num_bytes = getpagesize();
+	do {
+		bytes_to_write = strlen(buf)< num_bytes ? strlen(buf) : num_bytes;
+		num_bytes -= write(fd, buf, bytes_to_write);
+	} while (0 < num_bytes);
+	addr = mmap(0, sizeof(buf), PROT_READ, MAP_SHARED, fd, 0);
+	if ((pid = fork()) == -1){
+		printf("fork #1 failed, error number %d\n", errno);
+		cleanup();
+		exit(0);
 	}
+	if (pid == 0) {
+		memcpy(addr, buf, strlen(buf));
+		exit(255);
+	}
+	waitpid(pid, &status, 0);
+	if (!WIFEXITED(status)){
+		printf("child exited abnormally with status: %d\n", status);
+		cleanup();
+		exit(0);
+	}
+	switch (status) {
+	case 255:
+		printf("memcpy did not generate SIGSEGV\n");
+		cleanup();
+		ok = 0;
+	case 0:
+		printf("got SIGSEGV as expected\n");
+		break;
+	default:
+		printf("got unexpected signal: %d\n", status);
+		cleanup();
+		ok = 0;
+		break;
+	}
+	int ret = mprotect(addr, sizeof(buf), PROT_WRITE);
+	if (ret != -1) {
+		if ((pid = fork()) == -1){
+			printf("fork #2 failed\n");
+			cleanup();
+			ok = 0;
+		} if (pid == 0) {
+			memcpy(addr, buf, strlen(buf));
+			exit(0);
+		}
+		waitpid(pid, &status, 0);
+		if (WIFEXITED(status) &&
+			WEXITSTATUS(status) == 0)
+			printf("didn't get SIGSEGV\n");
+		else{
+			printf("child exited abnormally\n");
+			ok = 0;
+		}
+	} else {
+		printf("mprotect failed, error number %d\n", errno);
+		ok = 0;
+	}
+	munmap(addr, sizeof(buf));
+	addr = MAP_FAILED;
+	close(fd);
+	unlink(file1);
 	cleanup();
-	tst_exit();
+	if(ok)
+		printf("test succeeded\n");
 }
 
 void sighandler(int sig)
@@ -92,19 +95,15 @@ void sighandler(int sig)
 }
 
 void setup(void)
-{
-	tst_sig(FORK, sighandler, cleanup);
-	TEST_PAUSE;
-	tst_tmpdir();
+{;
 	sprintf(file1, "mprotect02.tmp.%d", getpid());
 }
 
 void cleanup(void)
 {
 	if (addr != MAP_FAILED) {
-		munmap(NULL, addr, sizeofNULL, addr, sizeofbuf));
-		close(NULL, fd);
+		munmap(addr, sizeof(buf));
+		close(fd);
 	}
-	tst_rmdir();
 }
 

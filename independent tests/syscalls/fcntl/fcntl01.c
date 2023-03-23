@@ -11,103 +11,106 @@ int main(int ac, char **av)
 	int mypid;
 	unsigned int i;
 	int lc;
-	tst_parse_opts(ac, av, NULL, NULL);
 	setup();
-	for (lc = 0; TEST_LOOPING(lc); lc++) {
-		tst_count = 0;
-		mypid = getpid();
-		for (i = 0; i < 8; i++) {
-			sprintf(fname, "./fcntl%d.%d", i, mypid);
-			if ((fd[i] =
-			     open(fname, O_WRONLY | O_CREAT, 0666)) == -1)
-				tst_resm(TBROK | TERRNO, "open failed");
-			fd2[i] = fd[i];
+	mypid = getpid();
+	for (i = 0; i < 8; i++) {
+		sprintf(fname, "./fcntl%d.%d", i, mypid);
+		if ((fd[i] = open(fname, O_WRONLY | O_CREAT, 0666)) == -1){
+			printf("open failed\n");
+			return 0;
 		}
+		fd2[i] = fd[i];
+	}
 		close(fd[2]);
 		close(fd[3]);
 		close(fd[4]);
 		close(fd[5]);
-		if ((fd[2] = fcntl(fd[1], F_DUPFD, 1)) == -1)
-			tst_resm(TFAIL | TERRNO, "fcntl(.., 1) failed");
-		if (fd[2] < fd2[2])
-			tst_resm(TFAIL, "new fd has unexpected value: "
-				 "got %d, expected greater than %d", fd[2], 5);
-		if ((fd[4] = fcntl(fd[1], F_DUPFD, fd2[3])) < 0)
-			tst_resm(TFAIL | TERRNO, "fcntl(.., fd2[3]) failed");
-		if (fd[4] < fd2[3])
-			tst_resm(TFAIL, "new fd has unexpected value, got %d, "
-				 "expect greater than %d", fd[4], fd2[3]);
-		if ((fd[8] = fcntl(fd[1], F_DUPFD, fd2[5])) < 0)
-			tst_resm(TFAIL | TERRNO, "fcntl(.., fd2[5]) failed");
-		if (fd[8] != fd2[5])
-			tst_resm(TFAIL, "new fd has unexpected value: "
-				 "got %d, expected %d", fd[8], fd2[5]);
+		if ((fd[2] = fcntl(fd[1], F_DUPFD, 1)) == -1){
+			printf("fcntl(.., 1) failed, error number %d\n", errno);
+			return 0;
+		}if (fd[2] < fd2[2]){
+			printf("new fd has unexpected value: got %d, expected greater than %d\n", fd[2], 5);
+			return 0;
+		}if ((fd[4] = fcntl(fd[1], F_DUPFD, fd2[3])) < 0){
+			printf("fcntl(.., fd2[3]) failed, error number %d\n", errno);
+			return 0;
+		}if (fd[4] < fd2[3]){
+			printf("new fd has unexpected value, got %d, expect greater than %d\n", fd[4], fd2[3]);
+			return 0;
+		}if ((fd[8] = fcntl(fd[1], F_DUPFD, fd2[5])) < 0){
+			printf("fcntl(.., fd2[5]) failed, error number %d\n", errno);
+			return 0;
+		}if (fd[8] != fd2[5]){
+			printf("new fd has unexpected value: got %d, expected %d\n", fd[8], fd2[5]);
+			return 0;
+		}
 		flags = fcntl(fd[2], F_GETFL, 0);
-		if ((flags & O_WRONLY) == 0)
-			tst_resm(TFAIL, "unexpected flag 0x%x, expected 0x%x",
-				 flags, O_WRONLY);
-		if (fcntl(fd[2], F_SETFL, O_NDELAY) == -1)
-			tst_resm(TBROK | TERRNO, "fcntl(.., O_NDELAY) failed");
+		if ((flags & O_WRONLY) == 0){
+			printf("unexpected flag 0x%x, expected 0x%x\n", flags, O_WRONLY);
+			return 0;
+		}if (fcntl(fd[2], F_SETFL, O_NDELAY) == -1){
+			printf("fcntl(.., O_NDELAY) failed\n");
+			return 0;
+		}
 		flags = fcntl(fd[2], F_GETFL, 0);
-		if ((flags & (O_NDELAY | O_WRONLY)) == 0)
-			tst_resm(TFAIL, "unexpected flag 0x%x, expected 0x%x",
-				 flags, O_NDELAY | O_WRONLY);
-		if (fcntl(fd[2], F_SETFL, O_APPEND) == -1)
-			tst_resm(TFAIL | TERRNO, "fcntl(.., O_APPEND) failed");
+		if ((flags & (O_NDELAY | O_WRONLY)) == 0){
+			printf("unexpected flag 0x%x, expected 0x%x\n",flags, O_NDELAY | O_WRONLY);
+			return 0;
+		}if (fcntl(fd[2], F_SETFL, O_APPEND) == -1){
+			printf("fcntl(.., O_APPEND) failed, error number %d\n", errno);
+			return 0;
+		}
 		flags = fcntl(fd[2], F_GETFL, 0);
-		if ((flags & (O_APPEND | O_WRONLY)) == 0)
-			tst_resm(TFAIL, "unexpected flag ox%x, expected 0x%x",
-				 flags, O_APPEND | O_WRONLY);
-		if (fcntl(fd[2], F_SETFL, O_NDELAY | O_APPEND) < 0)
-			tst_resm(TFAIL, "fcntl(.., O_NDELAY|O_APPEND) failed");
+		if ((flags & (O_APPEND | O_WRONLY)) == 0){
+			printf("unexpected flag ox%x, expected 0x%x\n", flags, O_APPEND | O_WRONLY);
+			return 0;
+		}if (fcntl(fd[2], F_SETFL, O_NDELAY | O_APPEND) < 0){
+			printf("fcntl(.., O_NDELAY|O_APPEND) failed\n");
+			return 0;
+		}
 		flags = fcntl(fd[2], F_GETFL, 0);
-		if ((flags & (O_NDELAY | O_APPEND | O_WRONLY)) == 0)
-			tst_resm(TFAIL, "unexpected flag 0x%x, expected 0x%x",
-				 flags,
-				 O_NDELAY | O_APPEND | O_SYNC | O_WRONLY);
-		if (fcntl(fd[2], F_SETFL, 0) == -1)
-			tst_resm(TFAIL, "fcntl(.., 0) failed");
+		if ((flags & (O_NDELAY | O_APPEND | O_WRONLY)) == 0){
+			printf("unexpected flag 0x%x, expected 0x%x\n", flags, O_NDELAY | O_APPEND | O_SYNC | O_WRONLY);
+			return 0;
+		}if (fcntl(fd[2], F_SETFL, 0) == -1){
+			printf("fcntl(.., 0) failed\n");
+			return 0;
+		}
 		flags = fcntl(fd[2], F_GETFL, 0);
-		if ((flags & O_WRONLY) == 0)
-			tst_resm(TFAIL, "unexpected flag 0x%x, expected 0x%x",
-				 flags, O_WRONLY);
-		 * Check ability to set (F_SETFD) the close on exec flag
-		 */
-		if ((flags = fcntl(fd[2], F_GETFD, 0)) < 0)
-			tst_resm(TFAIL | TERRNO,
-				 "fcntl(.., F_GETFD, ..) #1 failed");
-		if (flags != 0)
-			tst_resm(TFAIL, "unexpected flags got 0x%x expected "
-				 "0x%x", flags, 0);
-		if ((flags = fcntl(fd[2], F_SETFD, 1)) == -1)
-			tst_resm(TFAIL, "fcntl(.., F_SETFD, ..) failed");
-		if ((flags = fcntl(fd[2], F_GETFD, 0)) == -1)
-			tst_resm(TFAIL | TERRNO,
-				 "fcntl(.., F_GETFD, ..) #2 failed");
-		if (flags != 1)
-			tst_resm(TFAIL, "unexpected flags, got 0x%x, "
-				 "expected 0x%x", flags, 1);
-		for (i = 0; i < ARRAY_SIZE(fd); i++)
+		if ((flags & O_WRONLY) == 0){
+			printf("unexpected flag 0x%x, expected 0x%x\n",flags, O_WRONLY);
+			return 0;
+		}if ((flags = fcntl(fd[2], F_GETFD, 0)) < 0){
+			printf("fcntl(.., F_GETFD, ..) #1 failed, error number %d", errno);
+			return 0;
+		}if (flags != 0){
+			printf("unexpected flags got 0x%x expected 0x%x\n", flags, 0);
+			return 0;
+		}if ((flags = fcntl(fd[2], F_SETFD, 1)) == -1){
+			printf("fcntl(.., F_SETFD, ..) failed\n");
+			return 0;
+		}if ((flags = fcntl(fd[2], F_GETFD, 0)) == -1){
+			printf("fcntl(.., F_GETFD, ..) #2 failed, error number %d\n", errno);
+			return 0;
+		}if (flags != 1){
+			printf("unexpected flags, got 0x%x, expected 0x%x\n", flags, 1);
+			return 0;
+		}for (i = 0; i < sizeof(fd)/sizeof(fd[0]); i++)
 			close(fd[i]);
 		for (i = 0; i < 8; i++) {
 			sprintf(fname, "./fcntl%u.%d", i, mypid);
-			if ((unlink(fname)) == -1)
-				tst_resm(TFAIL | TERRNO,
-					 "unlinking %s failed", fname);
+			if ((unlink(fname)) == -1){
+				printf("unlinking %s failed, error number %d\n", fname, errno);
+				return 0;
+			}
 		}
-	}
+	printf("test succeeded\n");
 	cleanup();
-	tst_exit();
 }
 void setup(void)
 {
-	tst_sig(FORK, DEF_HANDLER, cleanup);
-	umask(0);
-	TEST_PAUSE;
-	tst_tmpdir();
 }
 void cleanup(void)
 {
-	tst_rmdir();
 }
 

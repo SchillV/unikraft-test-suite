@@ -8,71 +8,45 @@ int fd;
 struct flock flocks;
 int main(int ac, char **av)
 {
-	int lc;
-     * parse standard options
-     ***************************************************************/
-	tst_parse_opts(ac, av, NULL, NULL);
-     * perform global setup for test
-     ***************************************************************/
 	setup();
-     * check looping state if -c option given
-     ***************************************************************/
-	for (lc = 0; TEST_LOOPING(lc); lc++) {
-		int type;
-		for (type = 0; type < 2; type++) {
-			tst_count = 0;
-			flocks.l_type = type ? F_RDLCK : F_WRLCK;
-			 * Call fcntl(2) with F_SETLK argument on fname
-			 */
-fcntl(fd, F_SETLK, &flocks);
-			if (TEST_RETURN == -1) {
-				tst_resm(TFAIL,
-					 "fcntl(%s, F_SETLK, &flocks) flocks.l_type = %s Failed, errno=%d : %s",
-					 fname, type ? "F_RDLCK" : "F_WRLCK",
-					 TEST_ERRNO, strerror(TEST_ERRNO));
-			} else {
-				tst_resm(TPASS,
-					 "fcntl(%s, F_SETLK, &flocks) flocks.l_type = %s returned %ld",
-					 fname,
-					 type ? "F_RDLCK" : "F_WRLCK",
-					 TEST_RETURN);
-			}
-			flocks.l_type = F_UNLCK;
-			 * Call fcntl(2) with F_SETLK argument on fname
-			 */
-fcntl(fd, F_SETLK, &flocks);
-			if (TEST_RETURN == -1) {
-				tst_resm(TFAIL,
-					 "fcntl(%s, F_SETLK, &flocks) flocks.l_type = F_UNLCK Failed, errno=%d : %s",
-					 fname, TEST_ERRNO,
-					 strerror(TEST_ERRNO));
-			} else {
-				tst_resm(TPASS,
-					 "fcntl(%s, F_SETLK, &flocks) flocks.l_type = F_UNLCK returned %ld",
-					 fname, TEST_RETURN);
-			}
+	int type, ok=1;
+	for (type = 0; type < 2; type++) {
+		flocks.l_type = type ? F_RDLCK : F_WRLCK;
+		long int ret = fcntl(fd, F_SETLK, &flocks);
+		if (ret == -1) {
+			printf("fcntl(%s, F_SETLK, &flocks) flocks.l_type = %s Failed, errno=%d\n", fname, type ? "F_RDLCK" : "F_WRLCK",errno);
+			ok = 0;
+		} else {
+			printf( "fcntl(%s, F_SETLK, &flocks) flocks.l_type = %s returned %ld\n", fname, type ? "F_RDLCK" : "F_WRLCK", ret);
+		}
+		flocks.l_type = F_UNLCK;
+		ret = fcntl(fd, F_SETLK, &flocks);
+		if (ret == -1) {
+			printf("fcntl(%s, F_SETLK, &flocks) flocks.l_type = F_UNLCK Failed, errno=%d\n", fname, errno);
+			ok = 0;
+		} else {
+			printf("fcntl(%s, F_SETLK, &flocks) flocks.l_type = F_UNLCK returned %ld\n", fname, ret);
 		}
 	}
+	if(ok)
+		printf("test succeeded\n");
 	cleanup();
-	tst_exit();
 }
 void setup(void)
 {
-	tst_sig(NOFORK, DEF_HANDLER, cleanup);
-	TEST_PAUSE;
-	tst_tmpdir();
 	sprintf(fname, "./file_%d", getpid());
 	if ((fd = creat(fname, 0644)) == -1) {
-		tst_brkm(TBROK, cleanup,
-			 "creat(%s, 0644) Failed, errno=%d : %s", fname, errno,
-			 strerror(errno));
+		printf("creat(%s, 0644) Failed, errno=%d", fname, errno);
+		cleanup();
+		exit(0);
 	} else if (close(fd) == -1) {
-		tst_brkm(TBROK, cleanup, "close(%s) Failed, errno=%d : %s",
-			 fname, errno, strerror(errno));
+		printf("close(%s) Failed, errno=%d\n",fname, errno);
+		cleanup();
+		exit(0);
 	} else if ((fd = open(fname, O_RDWR, 0700)) == -1) {
-		tst_brkm(TBROK, cleanup,
-			 "open(%s, O_RDWR,0700) Failed, errno=%d : %s", fname,
-			 errno, strerror(errno));
+		printf("open(%s, O_RDWR,0700) Failed, errno=%d\n", fname, errno);
+		cleanup();
+		exit(0);
 	}
 	flocks.l_whence = 1;
 	flocks.l_start = 0;
@@ -82,12 +56,9 @@ void setup(void)
 void cleanup(void)
 {
 	if (close(fd) == -1) {
-		tst_resm(TWARN, "close(%s) Failed, errno=%d : %s", fname, errno,
-			 strerror(errno));
+		printf("close(%s) Failed, errno=%d\n", fname, errno);
 	} else if (unlink(fname) == -1) {
-		tst_resm(TWARN, "unlink(%s) Failed, errno=%d : %s", fname,
-			 errno, strerror(errno));
+		printf("unlink(%s) Failed, errno=%d\n", fname, errno);
 	}
-	tst_rmdir();
 }
 

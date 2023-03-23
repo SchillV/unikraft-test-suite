@@ -47,9 +47,23 @@ def verfunc(el):
         ret += line + "\n"
     return ret
     
+def rmcomment(file):
+    # remove multiple line comments first
+    while("/*" in file):
+        beg = file[:file.find("/*") -1]
+        end = file[file.find("/*") + 1:]
+        file = beg + end
 
+    #remove single line comments
+    lin = file.split("\n")
+    file = ""
+    for line in lin:
+        if("//" in line):
+            file += line.split("//")[0]
+    return file
 
 def convertFile(file):
+    file = rmcomment(file)
     els = file.split("static ")
     ret = "#include \"incl.h\"\n"
     for el in els:
@@ -60,13 +74,10 @@ def convertFile(file):
             ret += verfunc(el) + "\n"
             continue
         for line in lines:
-            if("//" in line or "/*" in line or "#include" in line or line == ""):
+            if("#include" in line or line == ""):
                 continue
             if(len(line) > 1 and line[1] == "*"):
                 continue
-            if("SAFE_WRITE_ALL" in line):
-                aux = line.split("SAFE_WRITE_ALL")
-                line = aux[0] + "1" + aux[1]
             if("SAFE_" in line):
                 aux = line.split("SAFE_")
                 aux1 = aux[1].split("(")
@@ -79,6 +90,7 @@ def convertFile(file):
                 line = aux[0] + "fprintf" + aux[1]
             if("TEST(" in line):
                 line = line.split("TEST(")[1][:-2] + ";"
+                line = "int ret = " + line
             ret += line + "\n"
         ret += "\n"
     if(isMain(els) is False):

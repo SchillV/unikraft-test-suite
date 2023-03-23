@@ -12,11 +12,9 @@ void testfunc_protexec(void);
 
 void (*testfunc[])(void) = { testfunc_protnone, testfunc_protexec };
 char *TCID = "mprotect04";
-int TST_TOTAL = ARRAY_SIZE(testfunc);
+int TST_TOTAL = sizeof(testfunc) / sizeof(testfunc[0]);
 
 volatile int sig_caught;
-
-sigjmp_buf env;
 
 unsigned int page_sz;
 typedef void (*func_ptr_t)(void);
@@ -24,15 +22,10 @@ int main(int ac, char **av)
 {
 	int lc;
 	int i;
-	tst_parse_opts(ac, av, NULL, NULL);
 	setup();
-	for (lc = 0; TEST_LOOPING(lc); lc++) {
-		tst_count = 0;
-		for (i = 0; i < TST_TOTAL; i++)
-			(*testfunc[i])();
-	}
+	for (i = 0; i < TST_TOTAL; i++)
+		(*testfunc[i])();
 	cleanup();
-	tst_exit();
 }
 
 void sighandler(int sig)
@@ -43,10 +36,7 @@ void sighandler(int sig)
 
 void setup(void)
 {
-	tst_tmpdir();
-	tst_sig(NOFORK, sighandler, cleanup);
 	page_sz = getpagesize();
-	TEST_PAUSE;
 }
 
 void testfunc_protnone(void)
@@ -131,9 +121,6 @@ void *get_func(void *mem, uintptr_t *func_page_offset)
 #endif
 	tst_resm(TINFO, "exec_func: %p, page_to_copy: %p",
 		&exec_func, page_to_copy);
-	 * platform that supports execute-only page access permissions, in which
-	 * case we have to explicitly change access protections to allow the
-	 * memory to be read. */
 	if (!page_present(page_to_copy)) {
 mprotect(page_to_copy, page_sz, PROT_READ | PROT_EXEC);
 		if (TEST_RETURN == -1) {
@@ -141,7 +128,6 @@ mprotect(page_to_copy, page_sz, PROT_READ | PROT_EXEC);
 				 "mprotect(PROT_READ|PROT_EXEC) failed");
 			return NULL;
 		}
-		 * wrong. */
 		if (!page_present(page_to_copy))
 			tst_brkm(TBROK, cleanup, "page_to_copy not present");
 	}
@@ -197,6 +183,5 @@ out:
 
 void cleanup(void)
 {
-	tst_rmdir();
 }
 

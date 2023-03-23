@@ -1,6 +1,4 @@
 #include "incl.h"
-  * Basic test for fcntl(2) using F_DUPFD argument.
-  */
 
 int fd;
 
@@ -8,22 +6,24 @@ char fname[256];
 
 const int min_fds[] = {0, 1, 2, 3, 10, 100};
 
-int  verify_fcntl(unsigned int n)
+int verify_fcntl(unsigned int n)
 {
 	int min_fd = min_fds[n];
-fcntl(fd, F_DUPFD, min_fd);
-	if (TST_RET == -1) {
-		tst_res(TFAIL | TTERRNO, "fcntl(%s, F_DUPFD, %i) failed",
-			fname, min_fd);
-		return;
+	long int ret = fcntl(fd, F_DUPFD, min_fd);
+	if (ret == -1) {
+		printf("fcntl(%s, F_DUPFD, %i) failed, error number %d\n",
+			fname, min_fd, errno);
+		return 0;
 	}
-	if (TST_RET < min_fd) {
-		tst_res(TFAIL, "fcntl(%s, F_DUPFD, %i) returned %ld < %i",
-			fname, min_fd, TST_RET, min_fd);
+	if (ret < min_fd) {
+		printf("fcntl(%s, F_DUPFD, %i) returned %ld < %i\n",
+			fname, min_fd, ret, min_fd);
+		return 0;
 	}
-	tst_res(TPASS, "fcntl(%s, F_DUPFD, %i) returned %ld",
-		fname, min_fd, TST_RET);
-	close(TST_RET);
+	printf("fcntl(%s, F_DUPFD, %i) returned %ld\n",
+		fname, min_fd, ret);
+	close(ret);
+	return 1;
 }
 
 void setup(void)
@@ -40,5 +40,10 @@ void cleanup(void)
 
 void main(){
 	setup();
+	int ok = 1;
+	for(int i=0;i<6;++i)
+		ok *= verify_fcntl(i);
+	if(ok)
+		printf("test succeeded");
 	cleanup();
 }

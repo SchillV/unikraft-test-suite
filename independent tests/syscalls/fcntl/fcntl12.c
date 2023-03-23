@@ -4,7 +4,7 @@ char fname[20] = "testfile";
 
 int fd = -1, max_files;
 
-int  verify_fcntl(
+int  verify_fcntl()
 {
 	pid_t pid;
 	int i;
@@ -15,15 +15,15 @@ int  verify_fcntl(
 			if (fd == -1)
 				break;
 		}
-		TST_EXP_FAIL2(fcntl(1, F_DUPFD, 1), EMFILE,
-			"fcntl(1, F_DUPFD, 1)");
+		int ret = fcntl(1, F_DUPFD, 1);
+		if(ret== -1 && errno == EMFILE)
+			return 1;
 	}
-	tst_reap_children();
+	return 0;
 }
 
 void setup(void)
 {
-	max_files = getdtablesize();
 }
 
 void cleanup(void)
@@ -35,5 +35,7 @@ void cleanup(void)
 
 void main(){
 	setup();
+	if(verify_fcntl())
+		printf("test passed\n");
 	cleanup();
 }

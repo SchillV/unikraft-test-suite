@@ -36,10 +36,6 @@ void access_test(struct tcase *tc, const char *user)
 		return;
 	switch (tc->mode) {
 	case F_OK:
-		 * The specified file(or pointed to by symbolic link)
-		 * exists, attempt to get its status, if successful,
-		 * access() behaviour is correct.
-		 */
 stat(tc->targetname, &stat_buf);
 		if (TST_RET == -1) {
 			tst_res(TFAIL | TTERRNO, "stat(%s) as %s failed",
@@ -48,10 +44,6 @@ stat(tc->targetname, &stat_buf);
 		}
 		break;
 	case R_OK:
-		 * The specified file(or pointed to by symbolic link)
-		 * has read access, attempt to open the file with O_RDONLY,
-		 * if we get a valid fd, access() behaviour is correct.
-		 */
 open(tc->targetname, O_RDONLY);
 		if (TST_RET == -1) {
 			tst_res(TFAIL | TTERRNO,
@@ -62,10 +54,6 @@ open(tc->targetname, O_RDONLY);
 		close(TST_RET);
 		break;
 	case W_OK:
-		 * The specified file(or pointed to by symbolic link)
-		 * has write access, attempt to open the file with O_WRONLY,
-		 * if we get a valid fd, access() behaviour is correct.
-		 */
 open(tc->targetname, O_WRONLY);
 		if (TST_RET == -1) {
 			tst_res(TFAIL | TTERRNO,
@@ -76,10 +64,6 @@ open(tc->targetname, O_WRONLY);
 		close(TST_RET);
 		break;
 	case X_OK:
-		 * The specified file(or pointed to by symbolic link)
-		 * has execute access, attempt to execute the executable
-		 * file, if successful, access() behaviour is correct.
-		 */
 		sprintf(command, "./%s", tc->targetname);
 system(command);
 		if (TST_RET != 0) {

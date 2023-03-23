@@ -18,10 +18,16 @@ def runTest(name, path):
     try:
         # compile the test
         global logs
-        subprocess.run("cd " + path + "&& gcc " + name, shell=True)
+        log = False
+        subprocess.run("cd " + path + "&& gcc " + name + "> /root/comp.txt", shell=True)
+        with open("/root/comp.txt", "r") as file:
+            cont = file.read()
+            logs += name + "\n" + cont + "\n"
+            log = True
+            file.close()
         content = os.listdir(path)
         if("a.out" not in content):
-            return -1
+            return 0
         # move the resulting binary in the elfloader shared folder
         subprocess.run("mv " + path + "/a.out /root/", shell=True)
         # run the image, outputting the results in a log file
@@ -33,7 +39,9 @@ def runTest(name, path):
         if("test succeeded" in cont):
             return 1
         else:
-            logs += name + "\n" + cont + "\n\n"
+            if(log is False):
+                logs += name
+            logs += "\n" + cont + "DIVIDER"
             return 0
     except:
         return -1
@@ -68,6 +76,6 @@ out += "\n"
 for i in range(len(syscalls)):
     out += str(brok_list[i]) + " "
 
-out += "\n\n\n" + logs
+out += "DIVIDER" + logs
 f = open("/root/out.txt", "w")
 f.write(out)

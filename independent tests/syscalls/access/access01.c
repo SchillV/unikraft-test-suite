@@ -171,30 +171,35 @@ struct tcase {
 	{DNAME_WX"/"FNAME_X, W_OK, "W_OK", EACCES, 1}
 };
 
-void access_test(struct tcase *tc, const char *user)
+int access_test(struct tcase *tc, const char *user)
 {
+	int ret;
+	printf("access(%s, %s) as %s", tc->fname, tc->name, user);
+	ret = access(tc->fname, tc->mode);
 	if (tc->exp_errno) {
-		TST_EXP_FAIL(access(tc->fname, tc->mode), tc->exp_errno,
-		             "access(%s, %s) as %s", tc->fname, tc->name, user);
+		if(ret || errno != tc->exp_errno)
+			return 0;
+		return 1;
 	} else {
-		TST_EXP_PASS(access(tc->fname, tc->mode),
-		             "access(%s, %s) as %s", tc->fname, tc->name, user);
+		if(ret == -1)
+			return 0;
+		return 1;
 	}
 }
 
-int  verify_access(unsigned int n)
+int verify_access(unsigned int n)
 {
 	struct tcase *tc = tcases + n;
 	pid_t pid;
 	if (tc->exp_user & 0x02)
-		access_test(tc, "root");
+		return access_test(tc, "root");
 	if (tc->exp_user & 0x01) {
 		pid = fork();
 		if (pid) {
 			waitpid(pid, NULL, 0);
 		} else {
 			setuid(uid);
-			access_test(tc, "nobody");
+			return (tc, "nobody");
 		}
 	}
 }
@@ -237,5 +242,9 @@ void setup(void)
 
 void main(){
 	setup();
-	cleanup();
+	int ok = 1, N = sizeof(tcases) / sizeof(tcases[0]);
+	for(int i = 0; i<N; i++)
+		ok *= verify_access(i);
+	if(ok)
+		printf("test succeeded");
 }

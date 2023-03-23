@@ -16,6 +16,7 @@ In order for the automation script to work properly, two conditions need to be m
 - If the system call folder has more than one test, a header file named "incl.h" should be created
 
 If the two conditions are met, then the results should update by simply running the 'runtest' script
+Make sure that nothing else is in the folder structure other than the c programs and header files, otherwise this may skew the results. To do this, use the reset.py script, found in the misc folder
 
 Some general rules of thumb:
 - Usually the proprietary ltp functions have a standard c counterpart

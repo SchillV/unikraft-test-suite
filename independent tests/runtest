@@ -41,7 +41,7 @@ pp = []
 fp = []
 bp = []
 with open("./tmp.txt", "r") as file:
-    content = file.read().split("\n\n\n")
+    content = file.read().split("DIVIDER")
     file.close()
 os.remove("./tmp.txt")
 
@@ -120,8 +120,18 @@ bp = np.array_split(np.array(bp), 6)
 # USE THE GATHERED DATA FOR THE PLOT
 
 print("Generating plots...")
+print("Total number of tests:\n\tpassing: " + str(sum(p)) + "\n\tfailing: " + str(sum(f)) + "\n\tunfinished: " + str(sum(b)))
 for i in range(len(syscalls)):
-    syscalls[i] += ": " + str(p[i]) + "/" + str(f[i]) + "/" + str(b[i])
+    syscalls[i] += ": "
+#    if(p[i] < 10):
+#        syscalls[i] += "0"
+    syscalls[i] += str(p[i]) + "/"
+#    if(f[i] < 10):
+#        syscalls[i] += "0"
+    syscalls[i] += str(f[i]) + "/"
+#    if(b[i]< 10):
+#       syscalls[i] += "0"
+    syscalls[i] += str(b[i])
 
 syscalls = [syscalls[i * 60:(i + 1) * 60] for i in range((len(syscalls) + 59) // 60 )]
 for i in range(len(syscalls)):
@@ -175,7 +185,7 @@ total_weight = {
     'broken':[int(sum(b) / tot * 10000)/100],
 }
 
-width = 1
+width = 1.5
 bottom=np.zeros(1)
 for res, res_count in total_weight.items():
     x = ax[6].bar(total, res_count, width, label=res, color=bar_colors[res], bottom=bottom)

@@ -1,21 +1,18 @@
 #include "incl.h"
-  * Basic test for fcntl(2) using F_GETFD argument.
-  */
 
 char fname[255];
 
 int fd;
 
-int  verify_fcntl(
+int  verify_fcntl()
 {
-fcntl(fd, F_GETFD, 0);
-	if (TST_RET == -1) {
-		tst_res(TFAIL | TTERRNO, "fcntl(%s, F_GETFD, 0) failed",
-			fname);
-		return;
+	int ret = fcntl(fd, F_GETFD, 0);
+	if (ret == -1) {
+		printf("fcntl(%s, F_GETFD, 0) failed, error number %d\n", fname, errno);
+		return 0;
 	}
-	tst_res(TPASS, "fcntl(%s, F_GETFD, 0) returned %ld",
-		fname, TST_RET);
+	printf("fcntl(%s, F_GETFD, 0) returned %d\n", fname, ret);
+	return 1;
 }
 
 void setup(void)
@@ -32,5 +29,7 @@ void cleanup(void)
 
 void main(){
 	setup();
+	if(verify_fcntl())
+		printf("test succeeded\n");
 	cleanup();
 }
