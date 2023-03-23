@@ -20,6 +20,7 @@ If the two conditions are met, then the results should update by simply running 
 Some general rules of thumb:
 - Usually the proprietary ltp functions have a standard c counterpart
 - I found it easier to have the original test opened in parallel (they can be found in the "original tests" folder)
+- Some system calls can be called dirrectly as a function (it will throw a compiler warning), while others can be accessed using the syscall.h library. This can be determined by checking the system call man page
 - Some test files can not feasibly be made to work independently of the ltp framework
 
 # The GUI

@@ -87,43 +87,69 @@ for i in range(len(p)):
     fp.append(f[i] / tot * 100)
     bp.append(b[i] / tot * 100)
 
+syscalls = os.listdir("./syscalls")
+# SORT THE ARRAYS SO THAT THE UNIMPLEMENTED SYSTEM CALL TESTS ARE LAST
+for i in range(len(bp)-1):
+    for j in range(i+1, len(bp)):
+        if(bp[i] > bp[j]):
+            aux = pp[i]
+            pp[i] = pp[j]
+            pp[j] = aux
+            aux = fp[i]
+            fp[i] = fp[j]
+            fp[j] = aux
+            aux = bp[i]
+            bp[i] = bp[j]
+            bp[j] = aux
+            aux = syscalls[i]
+            syscalls[i] = syscalls[j]
+            syscalls[j] = aux
+            aux = p[i]
+            p[i] = p[j]
+            p[j] = aux
+            aux = f[i]
+            f[i] = f[j]
+            f[j] = aux
+            aux = b[i]
+            b[i] = b[j]
+            b[j] = aux
+
 pp = np.array_split(np.array(pp), 6)
 fp = np.array_split(np.array(fp), 6)
 bp = np.array_split(np.array(bp), 6)
 # USE THE GATHERED DATA FOR THE PLOT
 
 print("Generating plots...")
-syscalls = os.listdir("./syscalls")
 for i in range(len(syscalls)):
     syscalls[i] += ": " + str(p[i]) + "/" + str(f[i]) + "/" + str(b[i])
 
 syscalls = [syscalls[i * 60:(i + 1) * 60] for i in range((len(syscalls) + 59) // 60 )]
 for i in range(len(syscalls)):
-    syscalls[i] = tuple(syscalls[i])
+    syscalls[i] = tuple(reversed(syscalls[i]))
 data = [{
-    'passed': pp[0],
-    'failed': fp[0],
-    'broken': bp[0],
+    'passed': np.flip(pp[0]),
+    'failed': np.flip(fp[0]),
+    'broken': np.flip(bp[0]),
 }, {
-    'passed': pp[1],
-    'failed': fp[1],
-    'broken': bp[1],
+    'passed': np.flip(pp[1]),
+    'failed': np.flip(fp[1]),
+    'broken': np.flip(bp[1]),
 }, {
-    'passed': pp[2],
-    'failed': fp[2],
-    'broken': bp[2],
+    'passed': np.flip(pp[2]),
+    'failed': np.flip(fp[2]),
+    'broken': np.flip(bp[2]),
 }, {
-    'passed': pp[3],
-    'failed': fp[3],
-    'broken': bp[3],
+    'passed': np.flip(pp[3]),
+    'failed': np.flip(fp[3]),
+    'broken': np.flip(bp[3]),
 }, {
-    'passed': pp[4],
-    'failed': fp[4],
-    'broken': bp[4],
+    'passed': np.flip(pp[4]),
+    'failed': np.flip(fp[4]),
+    'broken': np.flip(bp[4]),
 }, {
-    'passed': pp[5],
-    'failed': fp[5],
-    'broken': bp[5],
+    'passed': np.flip(pp[5]),
+    'failed': np.flip(fp[5]),
+    'broken': np.flip(bp[5]),
 }]
 width = 0.6  # the width of the bars: can also be len(x) sequence
 
